@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+}
+
+model Job {
+  id               String    @id @default(cuid())
+  title            String
+  company          String
+  companyLogo      String?
+  location         String
+  salary           String?
+  description      String
+  shortDescription String?
+  url              String    @unique
+  source           Source
+  tags             String[]
+  remote           Boolean   @default(true)
+  status           JobStatus @default(NEW)
+  matchScore       Int?
+  appliedAt        DateTime?
+  notes            String?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  coverLetter      CoverLetter?
+}
+
+model CoverLetter {
+  id        String   @id @default(cuid())
+  content   String
+  jobId     String   @unique
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model ScrapeLog {
+  id        String   @id @default(cuid())
+  source    Source
+  jobsFound Int
+  newJobs   Int
+  errors    String?
+  createdAt DateTime @default(now())
+}
+
+enum Source {
+  REMOTEOK
+  WEWORKREMOTELY
+  ARBEITNOW
+  MANUAL
+}
+
+enum JobStatus {
+  NEW
+  SAVED
+  APPLIED
+  INTERVIEW
+  REJECTED
+  OFFER
+}
