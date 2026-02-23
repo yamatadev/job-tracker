@@ -1,5 +1,6 @@
 import axios from "axios";
 import { ScrapedJob } from "./types";
+import { isEnglishOnly, parseSeniority } from "./utils";
 
 interface ArbeitnowResponse { data: ArbeitnowJob[]; }
 interface ArbeitnowJob {
@@ -24,19 +25,25 @@ export async function scrapeArbeitnow(): Promise<ScrapedJob[]> {
       .filter((job) => {
         if (!job.remote) return false;
         const text = `${job.title} ${job.tags?.join(" ")}`.toLowerCase();
-        return techKeywords.some((k) => text.includes(k));
+        if (!techKeywords.some((k) => text.includes(k))) return false;
+        const plainDesc = job.description?.replace(/<[^>]*>/g, "") || "";
+        return isEnglishOnly(job.title, plainDesc);
       })
-      .map((job) => ({
-        title: job.title,
-        company: job.company_name,
-        location: job.location || "Remote",
-        salary: job.salary_min && job.salary_max ? `${job.salary_min} - ${job.salary_max}` : undefined,
-        description: job.description,
-        shortDescription: job.description?.replace(/<[^>]*>/g, "").slice(0, 200) + "...",
-        url: job.url || `https://www.arbeitnow.com/view/${job.slug}`,
-        tags: job.tags || [],
-        remote: true,
-      }));
+      .map((job) => {
+        const plainDesc = job.description?.replace(/<[^>]*>/g, "") || "";
+        return {
+          title: job.title,
+          company: job.company_name,
+          location: job.location || "Remote",
+          salary: job.salary_min && job.salary_max ? `${job.salary_min} - ${job.salary_max}` : undefined,
+          description: job.description,
+          shortDescription: plainDesc.slice(0, 200) + "...",
+          url: job.url || `https://www.arbeitnow.com/view/${job.slug}`,
+          tags: job.tags || [],
+          remote: true,
+          seniority: parseSeniority(job.title, plainDesc),
+        };
+      });
   } catch (error) {
     console.error("Arbeitnow error:", error);
     return [];

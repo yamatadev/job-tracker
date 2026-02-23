@@ -1,3 +1,5 @@
+import { Seniority } from "@prisma/client";
+
 export interface ScrapedJob {
   title: string;
   company: string;
@@ -9,4 +11,5 @@ export interface ScrapedJob {
   url: string;
   tags: string[];
   remote: boolean;
+  seniority?: Seniority | null;
 }

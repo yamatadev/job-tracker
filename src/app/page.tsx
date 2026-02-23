@@ -7,8 +7,8 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h2>
-        <p className="text-gray-500 mt-1 text-sm">Overview of your job search</p>
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-100">Dashboard</h2>
+        <p className="text-slate-400 mt-1 text-sm">Overview of your job search</p>
       </div>
       <StatsCards />
       <div className="mt-6 sm:mt-8"><RecentJobs /></div>

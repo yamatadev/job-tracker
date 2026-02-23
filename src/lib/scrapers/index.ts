@@ -1,6 +1,11 @@
 import { prisma } from "../prisma";
 import { scrapeRemoteOK } from "./remoteok";
 import { scrapeArbeitnow } from "./arbeitnow";
+import { scrapeRemotive } from "./remotive";
+import { scrapeHimalayas } from "./himalayas";
+import { scrapeJobicy } from "./jobicy";
+import { scrapeTheMuse } from "./themuse";
+import { scrapeWeWorkRemotely } from "./weworkremotely";
 import { ScrapedJob } from "./types";
 import { Source } from "@prisma/client";
 
@@ -14,12 +19,12 @@ async function saveJobs(jobs: ScrapedJob[], source: Source): Promise<ScrapeResul
     try {
       const result = await prisma.job.upsert({
         where: { url: job.url },
-        update: { title: job.title, company: job.company, salary: job.salary, description: job.description, tags: job.tags },
+        update: { title: job.title, company: job.company, salary: job.salary, description: job.description, tags: job.tags, seniority: job.seniority },
         create: {
           title: job.title, company: job.company, companyLogo: job.companyLogo,
           location: job.location, salary: job.salary, description: job.description,
           shortDescription: job.shortDescription, url: job.url, source,
-          tags: job.tags, remote: job.remote,
+          tags: job.tags, remote: job.remote, seniority: job.seniority,
         },
       });
       const diff = result.updatedAt.getTime() - result.createdAt.getTime();
@@ -36,19 +41,49 @@ async function saveJobs(jobs: ScrapedJob[], source: Source): Promise<ScrapeResul
   return { source, jobsFound: jobs.length, newJobs, errors: errors.length > 0 ? errors.join("\n") : undefined };
 }
 
-export async function runAllScrapers(): Promise<ScrapeResult[]> {
+const SCRAPERS: Record<Source, (() => Promise<ScrapedJob[]>) | null> = {
+  [Source.REMOTEOK]: scrapeRemoteOK,
+  [Source.WEWORKREMOTELY]: scrapeWeWorkRemotely,
+  [Source.ARBEITNOW]: scrapeArbeitnow,
+  [Source.REMOTIVE]: scrapeRemotive,
+  [Source.HIMALAYAS]: scrapeHimalayas,
+  [Source.JOBICY]: scrapeJobicy,
+  [Source.THEMUSE]: scrapeTheMuse,
+  [Source.MANUAL]: null,
+};
+
+const SCRAPER_SOURCES: Source[] = [
+  Source.REMOTEOK,
+  Source.WEWORKREMOTELY,
+  Source.ARBEITNOW,
+  Source.REMOTIVE,
+  Source.HIMALAYAS,
+  Source.JOBICY,
+  Source.THEMUSE,
+];
+
+export async function runAllScrapers(selectedSources?: Source[]): Promise<ScrapeResult[]> {
   console.log("🔍 Starting scrape...\n");
   const results: ScrapeResult[] = [];
+  const sources = selectedSources ?? SCRAPER_SOURCES;
 
-  console.log("📡 RemoteOK...");
-  const rok = await scrapeRemoteOK();
-  console.log(`   Found: ${rok.length}`);
-  results.push(await saveJobs(rok, Source.REMOTEOK));
+  for (const source of sources) {
+    const scraper = SCRAPERS[source];
+    if (!scraper) continue;
 
-  console.log("📡 Arbeitnow...");
-  const abn = await scrapeArbeitnow();
-  console.log(`   Found: ${abn.length}`);
-  results.push(await saveJobs(abn, Source.ARBEITNOW));
+    console.log(`📡 ${source}...`);
+    try {
+      const jobs = await scraper();
+      console.log(`   Found: ${jobs.length}`);
+      results.push(await saveJobs(jobs, source));
+    } catch (error) {
+      console.error(`   Error: ${error}`);
+      await prisma.scrapeLog.create({
+        data: { source, jobsFound: 0, newJobs: 0, errors: String(error) },
+      });
+      results.push({ source, jobsFound: 0, newJobs: 0, errors: String(error) });
+    }
+  }
 
   console.log("\n✅ Done!");
   return results;

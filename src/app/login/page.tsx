@@ -34,7 +34,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Lado esquerdo — Branding */}
+      {/* Left side — Branding (emerald gradient, unchanged) */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-950 via-teal-950 to-cyan-900 relative overflow-hidden">
         {/* Decorative */}
         <div className="absolute inset-0">
@@ -71,7 +71,6 @@ export default function LoginPage() {
               manage your applications, and generate AI-powered cover letters.
             </p>
 
-            {/* Feature list */}
             <div className="mt-10 space-y-3">
               {[
                 "Multi-source job scraping",
@@ -97,51 +96,51 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Lado direito — Form */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-white">
+      {/* Right side — Form (dark navy) */}
+      <div className="flex-1 flex items-center justify-center p-6 bg-navy-950">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10">
             <div className="w-10 h-10 bg-emerald-950 rounded-xl flex items-center justify-center">
               <span className="text-lg">🎯</span>
             </div>
-            <span className="font-semibold text-lg text-gray-900">Job Tracker</span>
+            <span className="font-semibold text-lg text-slate-100">Job Tracker</span>
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
-          <p className="text-gray-500 mt-2 text-sm">Sign in to track your applications</p>
+          <h2 className="text-2xl font-bold text-slate-100">Welcome back</h2>
+          <p className="text-slate-400 mt-2 text-sm">Sign in to track your applications</p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="p-3 bg-red-900/30 border border-red-800 rounded-lg">
+                <p className="text-sm text-red-300">{error}</p>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@jobtracker.com" required
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all" />
+                className="w-full px-4 py-2.5 bg-navy-800 border border-navy-700 text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all placeholder:text-slate-500" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••" required
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all" />
+                className="w-full px-4 py-2.5 bg-navy-800 border border-navy-700 text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all placeholder:text-slate-500" />
             </div>
 
             <button type="submit" disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-950 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-900 disabled:opacity-50 transition-colors">
+              className="w-full flex items-center justify-center gap-2 bg-emerald-950 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-900 disabled:opacity-50 transition-colors border border-emerald-800">
               {loading ? <><Loader2 size={18} className="animate-spin" /> Signing in...</> : "Sign In"}
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-gray-100">
-            <p className="text-xs text-gray-400 text-center mb-3">Demo credentials</p>
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <p className="text-xs text-gray-500">admin@jobtracker.com · admin123</p>
+          <div className="mt-8 pt-6 border-t border-navy-700">
+            <p className="text-xs text-slate-500 text-center mb-3">Demo credentials</p>
+            <div className="bg-navy-800 rounded-lg p-3 text-center border border-navy-700">
+              <p className="text-xs text-slate-400">admin@jobtracker.com · admin123</p>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { ScrapedJob } from "./types";
+import { isEnglishOnly, parseSeniority } from "./utils";
 
 interface RemoteOKJob {
   id: string;
@@ -14,41 +15,68 @@ interface RemoteOKJob {
   tags: string[];
 }
 
+const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+const TECH_KEYWORDS = [
+  "developer", "engineer", "frontend", "backend", "fullstack", "full-stack",
+  "react", "node", "typescript", "javascript", "php", "software", "web dev",
+  "programmer", "junior", "python", "golang", "rust", "java",
+];
+
+async function fetchRemoteOK(url: string): Promise<RemoteOKJob[]> {
+  const response = await axios.get<RemoteOKJob[]>(url, {
+    headers: { "User-Agent": UA },
+    timeout: 15000,
+  });
+  // First element is a legal notice object, not a job
+  return Array.isArray(response.data) ? response.data.slice(1) : [];
+}
+
 export async function scrapeRemoteOK(): Promise<ScrapedJob[]> {
-  try {
-    const response = await axios.get<RemoteOKJob[]>("https://remoteok.com/api", {
-      headers: { "User-Agent": "JobTracker/1.0" },
-    });
+  const seen = new Set<string>();
+  const all: ScrapedJob[] = [];
 
-    const jobs = response.data.slice(1);
+  const ENDPOINTS = [
+    "https://remoteok.com/api",
+    "https://remoteok.com/api?tags=junior+developer",
+    "https://remoteok.com/api?tags=entry-level",
+  ];
 
-    const techKeywords = [
-      "developer", "engineer", "frontend", "backend", "fullstack",
-      "full-stack", "react", "node", "typescript", "javascript",
-      "php", "software", "web dev", "programmer",
-    ];
+  for (const endpoint of ENDPOINTS) {
+    try {
+      const jobs = await fetchRemoteOK(endpoint);
 
-    return jobs
-      .filter((job) => {
-        const text = `${job.title} ${job.tags?.join(" ")}`.toLowerCase();
-        return techKeywords.some((k) => text.includes(k));
-      })
-      .map((job) => ({
-        title: job.title,
-        company: job.company,
-        companyLogo: job.company_logo || undefined,
-        location: job.location || "Remote",
-        salary: job.salary_min && job.salary_max
-          ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
-          : undefined,
-        description: job.description,
-        shortDescription: job.description?.replace(/<[^>]*>/g, "").slice(0, 200) + "...",
-        url: job.url || `https://remoteok.com/l/${job.id}`,
-        tags: job.tags || [],
-        remote: true,
-      }));
-  } catch (error) {
-    console.error("RemoteOK error:", error);
-    return [];
+      for (const job of jobs) {
+        const url = job.url || `https://remoteok.com/l/${job.id}`;
+        if (!url || seen.has(url)) continue;
+
+        const text = `${job.title} ${(job.tags || []).join(" ")}`.toLowerCase();
+        if (!TECH_KEYWORDS.some((k) => text.includes(k))) continue;
+
+        const plainDesc = job.description?.replace(/<[^>]*>/g, "") || "";
+        if (!isEnglishOnly(job.title, plainDesc)) continue;
+
+        seen.add(url);
+        all.push({
+          title: job.title,
+          company: job.company,
+          companyLogo: job.company_logo || undefined,
+          location: job.location || "Remote",
+          salary: job.salary_min && job.salary_max
+            ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
+            : undefined,
+          description: job.description,
+          shortDescription: plainDesc.slice(0, 200) + "...",
+          url,
+          tags: job.tags || [],
+          remote: true,
+          seniority: parseSeniority(job.title, plainDesc),
+        });
+      }
+    } catch (error) {
+      console.error(`RemoteOK error for ${endpoint}:`, error);
+    }
   }
+
+  return all;
 }

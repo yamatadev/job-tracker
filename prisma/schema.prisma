@@ -29,6 +29,7 @@ model Job {
   tags             String[]
   remote           Boolean   @default(true)
   status           JobStatus @default(NEW)
+  seniority        Seniority?
   matchScore       Int?
   appliedAt        DateTime?
   notes            String?
@@ -60,7 +61,21 @@ enum Source {
   REMOTEOK
   WEWORKREMOTELY
   ARBEITNOW
+  REMOTIVE
+  HIMALAYAS
+  JOBICY
+  THEMUSE
   MANUAL
+}
+
+enum Seniority {
+  INTERN
+  JUNIOR
+  MID
+  SENIOR
+  LEAD
+  STAFF
+  PRINCIPAL
 }
 
 enum JobStatus {
