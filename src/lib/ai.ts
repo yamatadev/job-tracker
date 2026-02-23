@@ -57,3 +57,70 @@ ${candidateSummary}`,
   if (!raw) throw new Error("Model returned an empty response");
   return raw;
 }
+
+export async function summarizeResume(resumeText: string): Promise<string> {
+  const response = await client.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a senior technical recruiter. Summarize the candidate resume into 120-180 words in American English. " +
+          "Focus on role, years of experience, key skills, measurable achievements, and domain expertise. " +
+          "Use 1 short paragraph, no bullets, no headings, no filler, no first-person. Output only the summary text.",
+      },
+      {
+        role: "user",
+        content: resumeText.slice(0, 6000),
+      },
+    ],
+    max_tokens: 350,
+    temperature: 0.3,
+  });
+
+  const raw = response.choices[0]?.message?.content ?? "";
+  if (!raw) throw new Error("Model returned an empty response");
+  return raw.trim();
+}
+
+export async function summarizeResumeWithHighlights(
+  resumeText: string,
+  length: "short" | "medium" | "long"
+): Promise<{ summary: string; highlights: string[] }> {
+  const wordRange =
+    length === "short" ? "80-120" : length === "long" ? "180-240" : "120-180";
+
+  const response = await client.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a senior technical recruiter. Return STRICT JSON with keys: summary (string) and highlights (array of 5 strings). " +
+          `Summary must be ${wordRange} words, 1 paragraph, American English, no bullets, no headings, no first-person. ` +
+          "Highlights must be 5 concise bullet phrases focusing on skills and measurable achievements. " +
+          "Output JSON only, no markdown, no extra text.",
+      },
+      {
+        role: "user",
+        content: resumeText.slice(0, 6000),
+      },
+    ],
+    max_tokens: 500,
+    temperature: 0.3,
+  });
+
+  const raw = response.choices[0]?.message?.content ?? "";
+  if (!raw) throw new Error("Model returned an empty response");
+  try {
+    const parsed = JSON.parse(raw);
+    const summary = typeof parsed.summary === "string" ? parsed.summary.trim() : "";
+    const highlights = Array.isArray(parsed.highlights)
+      ? parsed.highlights.map((h) => String(h).trim()).filter(Boolean).slice(0, 5)
+      : [];
+    if (!summary) throw new Error("Invalid summary");
+    return { summary, highlights };
+  } catch {
+    return { summary: raw.trim(), highlights: [] };
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { FileText, Loader2, Copy, CheckCircle, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 interface Job { id: string; title: string; company: string; coverLetter: { content: string } | null; }
 
@@ -23,7 +24,7 @@ export default function CoverLettersPage() {
       const res = await fetch("/api/cover-letter", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jobId }) });
       const data = await res.json();
       if (res.ok) setCoverLetter(data.content);
-      else setError(data.error || "Error");
+      else setError(data.code === "PROFILE_MISSING" ? "PROFILE_MISSING" : (data.error || "Error"));
     } catch (err) { setError(String(err)); }
     finally { setGenerating(false); }
   };
@@ -79,7 +80,16 @@ export default function CoverLettersPage() {
           </div>
           <div className="p-4 sm:p-6 min-h-[300px] lg:min-h-[400px]">
             {generating && <div className="flex flex-col items-center justify-center h-64 text-slate-500"><Loader2 size={32} className="animate-spin mb-3" /><p className="text-sm">Generating...</p></div>}
-            {error && <div className="p-4 bg-red-900/30 rounded-lg text-sm text-red-300 border border-red-800">{error}</div>}
+            {error && (
+              <div className="p-4 bg-red-900/30 rounded-lg text-sm text-red-300 border border-red-800">
+                {error === "PROFILE_MISSING" ? (
+                  <>
+                    You need to set up your candidate profile before generating cover letters.{" "}
+                    <Link className="text-sky-300 underline" href="/profile">Go to Profile</Link>
+                  </>
+                ) : error}
+              </div>
+            )}
             {coverLetter && <div className="prose prose-sm max-w-none text-slate-300 whitespace-pre-wrap">{coverLetter}</div>}
             {!generating && !coverLetter && !error && <div className="flex items-center justify-center h-64 text-slate-600"><p className="text-sm">Select a job to generate</p></div>}
           </div>

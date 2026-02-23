@@ -7,7 +7,8 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "scrape": "tsx scripts/scrape.ts"
+    "scrape": "tsx scripts/scrape.ts",
+    "setup": "tsx scripts/setup-env.ts"
   },
   "prisma": {
   "seed": "tsx prisma/seed.ts"
@@ -19,8 +20,10 @@
     "date-fns": "^4.1.0",
     "jose": "^6.1.3",
     "lucide-react": "^0.575.0",
+    "mammoth": "^1.8.0",
     "next": "16.1.6",
     "openai": "^6.22.0",
+    "pdf-parse": "^1.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.7.0",

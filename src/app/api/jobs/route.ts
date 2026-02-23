@@ -1,22 +1,23 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { JobStatus, Seniority, Source } from "@prisma/client";
+import { Source } from "@prisma/client";
+import { requireAuth } from "@/lib/auth";
+import { JobQuerySchema, parseSearchParams } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
 const DATE_RANGE_DAYS: Record<string, number> = { "1d": 1, "3d": 3, "7d": 7, "30d": 30 };
 
 export async function GET(request: NextRequest) {
-  const sp = request.nextUrl.searchParams;
-  const status = sp.get("status") as JobStatus | null;
-  const source = sp.get("source") as Source | null;
-  const seniority = sp.get("seniority") as Seniority | null;
-  const search = sp.get("search");
-  const dateRange = sp.get("dateRange");
-  const page = parseInt(sp.get("page") || "1");
-  const limit = parseInt(sp.get("limit") || "20");
+  const user = await requireAuth(request);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const where: Record<string, unknown> = {};
+  const sp = request.nextUrl.searchParams;
+  const parsed = JobQuerySchema.safeParse(parseSearchParams(sp));
+  if (!parsed.success) return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+  const { status, source, seniority, search, dateRange, page, limit } = parsed.data;
+
+  const where: Record<string, unknown> = { userId: user.userId };
   if (status) where.status = status;
   if (source) where.source = source;
   if (seniority) where.seniority = seniority;
@@ -42,8 +43,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const source = request.nextUrl.searchParams.get("source") as Source | null;
-  if (!source) return NextResponse.json({ error: "source required" }, { status: 400 });
-  const { count } = await prisma.job.deleteMany({ where: { source } });
+  const user = await requireAuth(request);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const sourceRaw = request.nextUrl.searchParams.get("source") || "";
+  if (!Object.prototype.hasOwnProperty.call(Source, sourceRaw)) {
+    return NextResponse.json({ error: "source required" }, { status: 400 });
+  }
+  const source = Source[sourceRaw as keyof typeof Source];
+  const { count } = await prisma.job.deleteMany({ where: { source, userId: user.userId } });
   return NextResponse.json({ deleted: count });
 }

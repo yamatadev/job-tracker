@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Search, FileText, LogOut } from "lucide-react";
+import { LayoutDashboard, Briefcase, Search, FileText, LogOut, User } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { label: "Jobs", href: "/jobs", icon: Briefcase },
   { label: "Scraper", href: "/scraper", icon: Search },
   { label: "Cover Letters", href: "/cover-letters", icon: FileText },
+  { label: "Profile", href: "/profile", icon: User },
 ];
 
 export function Sidebar() {

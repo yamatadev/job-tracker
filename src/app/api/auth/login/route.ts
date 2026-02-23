@@ -2,12 +2,18 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { compare } from "bcryptjs";
 import { SignJWT } from "jose";
+import { getJwtSecret } from "@/lib/auth";
+import { getClientId, rateLimit } from "@/lib/rate-limit";
 
-const SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || "fallback-secret"
-);
+const SECRET = getJwtSecret();
 
 export async function POST(request: NextRequest) {
+  const ip = getClientId(request);
+  const limit = rateLimit(`login:${ip}`, { limit: 10, windowMs: 60_000 });
+  if (!limit.ok) {
+    return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+  }
+
   const { email, password } = await request.json();
 
   if (!email || !password) {

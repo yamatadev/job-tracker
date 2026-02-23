@@ -11,16 +11,17 @@ import { Source } from "@prisma/client";
 
 interface ScrapeResult { source: Source; jobsFound: number; newJobs: number; errors?: string; }
 
-async function saveJobs(jobs: ScrapedJob[], source: Source): Promise<ScrapeResult> {
+async function saveJobs(jobs: ScrapedJob[], source: Source, userId: string): Promise<ScrapeResult> {
   let newJobs = 0;
   const errors: string[] = [];
 
   for (const job of jobs) {
     try {
       const result = await prisma.job.upsert({
-        where: { url: job.url },
-        update: { title: job.title, company: job.company, salary: job.salary, description: job.description, tags: job.tags, seniority: job.seniority },
+        where: { userId_url: { userId, url: job.url } },
+        update: { title: job.title, company: job.company, salary: job.salary, description: job.description, tags: job.tags, seniority: job.seniority, location: job.location, shortDescription: job.shortDescription, companyLogo: job.companyLogo, remote: job.remote },
         create: {
+          userId,
           title: job.title, company: job.company, companyLogo: job.companyLogo,
           location: job.location, salary: job.salary, description: job.description,
           shortDescription: job.shortDescription, url: job.url, source,
@@ -35,7 +36,7 @@ async function saveJobs(jobs: ScrapedJob[], source: Source): Promise<ScrapeResul
   }
 
   await prisma.scrapeLog.create({
-    data: { source, jobsFound: jobs.length, newJobs, errors: errors.length > 0 ? errors.join("\n") : null },
+    data: { userId, source, jobsFound: jobs.length, newJobs, errors: errors.length > 0 ? errors.join("\n") : null },
   });
 
   return { source, jobsFound: jobs.length, newJobs, errors: errors.length > 0 ? errors.join("\n") : undefined };
@@ -62,10 +63,10 @@ const SCRAPER_SOURCES: Source[] = [
   Source.THEMUSE,
 ];
 
-export async function runAllScrapers(selectedSources?: Source[]): Promise<ScrapeResult[]> {
+export async function runAllScrapers(opts: { sources?: Source[]; userId: string }): Promise<ScrapeResult[]> {
   console.log("🔍 Starting scrape...\n");
   const results: ScrapeResult[] = [];
-  const sources = selectedSources ?? SCRAPER_SOURCES;
+  const sources = opts.sources ?? SCRAPER_SOURCES;
 
   for (const source of sources) {
     const scraper = SCRAPERS[source];
@@ -75,11 +76,11 @@ export async function runAllScrapers(selectedSources?: Source[]): Promise<Scrape
     try {
       const jobs = await scraper();
       console.log(`   Found: ${jobs.length}`);
-      results.push(await saveJobs(jobs, source));
+      results.push(await saveJobs(jobs, source, opts.userId));
     } catch (error) {
       console.error(`   Error: ${error}`);
       await prisma.scrapeLog.create({
-        data: { source, jobsFound: 0, newJobs: 0, errors: String(error) },
+        data: { userId: opts.userId, source, jobsFound: 0, newJobs: 0, errors: String(error) },
       });
       results.push({ source, jobsFound: 0, newJobs: 0, errors: String(error) });
     }

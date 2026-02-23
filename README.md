@@ -107,7 +107,11 @@ docker compose up -d
 3. Configure environment:
 ```bash
 cp .env.example .env
-# Edit .env with your DATABASE_URL and optionally OPENAI_API_KEY
+# Edit .env with your DATABASE_URL, NEXTAUTH_SECRET, and optionally OPENAI_API_KEY
+```
+Or generate `NEXTAUTH_SECRET` automatically:
+```bash
+npm run setup
 ```
 
 4. Run migrations and seed:
@@ -118,7 +122,7 @@ npx prisma db seed
 
 5. Fetch initial jobs:
 ```bash
-npm run scrape
+SCRAPE_USER_ID=<your-user-id> npm run scrape
 ```
 
 6. Start the dev server:
